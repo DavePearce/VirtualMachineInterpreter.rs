@@ -163,10 +163,12 @@ impl<'a> Instruction<'a> {
 
 /// A collection of instructions.
 pub struct InstructionSet<'a> {
-    insns : Vec<Instruction<'a>>
+    insns : &'a [Instruction<'a>]
 }
 
 impl<'a> InstructionSet<'a> {
-    
+    pub fn new(insns : &'a [Instruction<'a>]) -> Self {
+	InstructionSet{insns}
+    }
 }
 
