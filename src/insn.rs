@@ -1,6 +1,6 @@
 use num::BigUint;
-use crate::machine::MachineCode;
-use crate::machine::MachineState;
+use crate::machine::MicroCode;
+use crate::machine::State;
 
 /// Used for converting a given domain into a physical count of
 /// elements in that domain.  For example, the domain of 2bits would
@@ -141,16 +141,16 @@ pub struct Instruction<'a> {
     /// Format associated with this instruction.
     format: &'a Format,
     /// Machine semantics associated with instruction.
-    semantic: &'a [MachineCode]
+    semantic: &'a [MicroCode]
 }
 
 impl<'a> Instruction<'a> {
-    pub fn new(mnemonic: &'a str, format: &'a Format, semantic: &'a [MachineCode]) -> Self {
+    pub fn new(mnemonic: &'a str, format: &'a Format, semantic: &'a [MicroCode]) -> Self {
 	Instruction{mnemonic,format,semantic}
     }
 
     /// Apply a given instruction to a given machine state.
-    pub fn execute(&self, state: &mut MachineState) {
+    pub fn execute(&self, state: &mut State) {
 	for insn in self.semantic {
 	    state.execute(*insn);
 	}

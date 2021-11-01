@@ -91,11 +91,11 @@ pub enum Sign {
     Signed
 }
 
-/// Microcode is used to define the semantics of virtual machine
+/// MicroCode is used to define the semantics of virtual machine
 /// instructions.  This means, for example, they can be executed using
 /// a "virtual machine interpreter".
 #[derive(Clone,Copy,PartialEq)]
-pub enum MachineCode {
+pub enum MicroCode {
     /// x := x + y (w bits signed or unsigned)
     Add(usize,usize,Width),    
     /// x := y (w bits)
@@ -112,7 +112,7 @@ pub enum MachineCode {
 // Machine State
 // =====================================================
 
-pub struct MachineState<'a> {
+pub struct State<'a> {
     /// Program counter.  This determines where in the instruction
     /// memory the machine is currently executing.  The program
     /// counter always points to the *next* instruction to be
@@ -122,13 +122,13 @@ pub struct MachineState<'a> {
     pub data: Memory<'a>,
 }
 
-impl<'a> MachineState<'a> {
+impl<'a> State<'a> {
     pub fn new(pc: usize, bytes: &'a mut [u8]) -> Self {
-	MachineState{pc,data: Memory::new(bytes)}
+	State{pc,data: Memory::new(bytes)}
     }
-    pub fn execute(&mut self, insn: MachineCode) {
+    pub fn execute(&mut self, insn: MicroCode) {
 	match insn {
-	    MachineCode::Add(x,y,Width::Byte) => {
+	    MicroCode::Add(x,y,Width::Byte) => {
 		let v = self.data.read_u8(x);
 		let w = self.data.read_u8(y);
 		let r = v.wrapping_add(w);
@@ -137,7 +137,7 @@ impl<'a> MachineState<'a> {
 		self.data.write_u8(x,r);
 		self.pc += 1;
 	    }
-	    MachineCode::Add(x,y,Width::Word) => {
+	    MicroCode::Add(x,y,Width::Word) => {
 		let v = self.data.read_u16(x);
 		let w = self.data.read_u16(y);
 		let r = v.wrapping_add(w);
@@ -146,7 +146,7 @@ impl<'a> MachineState<'a> {
 		self.data.write_u16(x,r);
 		self.pc += 1;
 	    }
-	    MachineCode::Add(x,y,Width::DoubleWord) => {
+	    MicroCode::Add(x,y,Width::DoubleWord) => {
 		let v = self.data.read_u32(x);
 		let w = self.data.read_u32(y);
 		let r = v.wrapping_add(w);
@@ -155,7 +155,7 @@ impl<'a> MachineState<'a> {
 		self.data.write_u32(x,r);
 		self.pc += 1;
 	    }
-	    MachineCode::Add(x,y,Width::QuadWord) => {
+	    MicroCode::Add(x,y,Width::QuadWord) => {
 		let v = self.data.read_u64(x);
 		let w = self.data.read_u64(y);
 		let r = v.wrapping_add(w);
@@ -164,49 +164,49 @@ impl<'a> MachineState<'a> {
 		self.data.write_u64(x,r);
 		self.pc += 1;
 	    }
-	    MachineCode::Copy(x,y,Width::Byte) => {
+	    MicroCode::Copy(x,y,Width::Byte) => {
 		let v = self.data.read_u8(y);
 		self.data.write_u8(x,v);
 		self.pc += 1;
 	    }
-	    MachineCode::Copy(x,y,Width::Word) => {
+	    MicroCode::Copy(x,y,Width::Word) => {
 		let v = self.data.read_u16(y);
 		self.data.write_u16(x,v);
 		self.pc += 1;
 	    }
-	    MachineCode::Copy(x,y,Width::DoubleWord) => {
+	    MicroCode::Copy(x,y,Width::DoubleWord) => {
 		let v = self.data.read_u32(y);
 		self.data.write_u32(x,v);
 		self.pc += 1;
 	    }
-	    MachineCode::Copy(x,y,Width::QuadWord) => {
+	    MicroCode::Copy(x,y,Width::QuadWord) => {
 		let v = self.data.read_u64(y);
 		self.data.write_u64(x,v);
 		self.pc += 1;
 	    }
-	    MachineCode::Goto(i) => {
+	    MicroCode::Goto(i) => {
 		self.pc = i;
 	    }
-	    MachineCode::Jump(i) => {
+	    MicroCode::Jump(i) => {
 		if i < 0 {
 		    self.pc -= -i as usize;
 		} else {
 		    self.pc += i as usize;
 		}
 	    }	    
-	    MachineCode::Load(x,i,Width::Byte) => {
+	    MicroCode::Load(x,i,Width::Byte) => {
 		self.data.write_u8(x,i.try_into().unwrap());
 		self.pc += 1;
 	    }
-	    MachineCode::Load(x,i,Width::Word) => {
+	    MicroCode::Load(x,i,Width::Word) => {
 		self.data.write_u16(x,i.try_into().unwrap());
 		self.pc += 1;
 	    }
-	    MachineCode::Load(x,i,Width::DoubleWord) => {
+	    MicroCode::Load(x,i,Width::DoubleWord) => {
 		self.data.write_u32(x,i.try_into().unwrap());
 		self.pc += 1;
 	    }
-	    MachineCode::Load(x,i,Width::QuadWord) => {
+	    MicroCode::Load(x,i,Width::QuadWord) => {
 		self.data.write_u64(x,i);
 		self.pc += 1;
 	    }
