@@ -4,7 +4,7 @@ use num::BigUint;
 /// elements in that domain.  For example, the domain of 2bits would
 /// convert into a count of 4 (i.e. since that is the number of
 /// distinct elements in the domain).
-trait DomainSize {
+pub trait DomainSize {
     /// Calculate the number of elements in the given domain.
     fn to_domsize(&self) -> BigUint;
 }
@@ -14,7 +14,7 @@ trait DomainSize {
 // ================================================================
 
 #[derive(Clone,Copy,PartialEq)]
-struct Bits {
+pub struct Bits {
     // INVARIANT: value > 0
     value : u8,
 }
@@ -43,7 +43,7 @@ impl DomainSize for Bits {
 // ================================================================
 
 #[derive(Clone,Copy,PartialEq)]
-struct Bytes {
+pub struct Bytes {
     // INVARIANT: value > 0    
     value : u8,
 }
@@ -88,7 +88,7 @@ impl DomainSize for Bytes {
 /// we can have at most four instructions in this class, and each
 /// operand can take on eight distinct values.
 #[derive(PartialEq)]
-struct Format {
+pub struct Format {
     /// Determines the overall width (in bytes) of an instruction in
     /// this class.  Generally speaking, virtual machines normally
     /// have all instructions of the same width (e.g. 32bits) and, in
@@ -133,7 +133,7 @@ impl DomainSize for Format {
 // =====================================================
 
 /// Describes a fixed-size array of bytes.
-struct Memory<'a> {
+pub struct Memory<'a> {
     contents: &'a mut [u8]
 }
 
@@ -200,7 +200,7 @@ impl<'a> Memory<'a> {
 // =====================================================
 
 #[derive(Clone,Copy,PartialEq)]
-enum Width {
+pub enum Width {
     /// 8 bits
     Byte,
     /// 16 bits    
@@ -212,7 +212,7 @@ enum Width {
 }
 
 #[derive(Clone,Copy,PartialEq)]
-enum Sign {
+pub enum Sign {
     // Indicates an unsigned operation
     Unsigned,
     // Indicates a signed operation
@@ -223,7 +223,7 @@ enum Sign {
 /// instructions.  This means, for example, they can be executed using
 /// a "virtual machine interpreter".
 #[derive(Clone,Copy,PartialEq)]
-enum MachineCode {
+pub enum MachineCode {
     /// x := x + y (w bits signed or unsigned)
     Add(usize,usize,Width),    
     /// x := y (w bits)
@@ -240,7 +240,7 @@ enum MachineCode {
 // Machine State
 // =====================================================
 
-struct MachineState<'a> {
+pub struct MachineState<'a> {
     /// Program counter.  This determines where in the instruction
     /// memory the machine is currently executing.  The program
     /// counter always points to the *next* instruction to be
@@ -350,7 +350,7 @@ impl<'a> MachineState<'a> {
 // Instruction
 // =====================================================
 
-struct Instruction<'a> {
+pub struct Instruction<'a> {
     /// Mnemonic for referring to the instruction.  Every instruction
     /// should have a unique mnemonic.
     mnemonic: &'a str,
@@ -378,7 +378,7 @@ impl<'a> Instruction<'a> {
 // =====================================================   
 
 /// A collection of instructions.
-struct InstructionSet<'a> {
+pub struct InstructionSet<'a> {
     insns : Vec<Instruction<'a>>
 }
 
@@ -405,7 +405,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_bites_00() {
+    fn test_bits_00() {
 	let _b = Bits::from(0);
     }    
 
@@ -518,7 +518,7 @@ mod tests {
     }
 
     // =====================================================
-    // Machine Codes (Add)
+    // MicroCode (Add)
     // =====================================================   
 
     #[test]
@@ -555,7 +555,7 @@ mod tests {
     }    
     
     // =====================================================
-    // Machine Codes (Copy)
+    // MicroCode (Copy)
     // =====================================================   
     
     #[test]
@@ -592,7 +592,7 @@ mod tests {
     }
 
     // =====================================================
-    // Machine Codes (Load)
+    // MicroCode (Load)
     // =====================================================   
     
     #[test]
@@ -651,7 +651,7 @@ mod tests {
     }
 
     // =====================================================
-    // Machine Codes (Goto)
+    // MicroCode (Goto)
     // =====================================================   
     
     #[test]
@@ -677,7 +677,7 @@ mod tests {
     }
 
     // =====================================================
-    // Machine Codes (Jump)
+    // MicroCode (Jump)
     // =====================================================       
     
     #[test]
