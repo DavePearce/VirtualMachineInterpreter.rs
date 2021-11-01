@@ -145,35 +145,95 @@ impl<'a> Memory<'a> {
 	self.contents[address]
     }
     pub fn read_u16(&self, address : usize) -> u16 {
-	todo!("implement me");
+	let b0 = self.contents[address];
+	let b1 = self.contents[address+1];	
+	return u16::from_le_bytes([b0,b1]);
+    }
+    pub fn read_u32(&self, address : usize) -> u32 {
+	let b0 = self.contents[address+0];
+	let b1 = self.contents[address+1];
+	let b2 = self.contents[address+2];
+	let b3 = self.contents[address+3];
+	return u32::from_le_bytes([b0,b1,b2,b3]);
+    }
+    pub fn read_u64(&self, address : usize) -> u64 {
+	let b0 = self.contents[address+0];
+	let b1 = self.contents[address+1];
+	let b2 = self.contents[address+2];
+	let b3 = self.contents[address+3];
+	let b4 = self.contents[address+4];
+	let b5 = self.contents[address+5];
+	let b6 = self.contents[address+6];
+	let b7 = self.contents[address+7];
+	return u64::from_le_bytes([b0,b1,b2,b3,b4,b5,b6,b7]);
     }
     pub fn write_u8(&mut self, address : usize, value: u8) {
 	self.contents[address] = value; 
     }
     pub fn write_u16(&mut self, address : usize, value: u16) {
-	todo!("implement me");	
-    }    
+	let bytes = value.to_le_bytes();
+	self.contents[address+0] = bytes[0];
+	self.contents[address+1] = bytes[1];
+    }
+    pub fn write_u32(&mut self, address : usize, value: u32) {
+	let bytes = value.to_le_bytes();
+	self.contents[address+0] = bytes[0];
+	self.contents[address+1] = bytes[1];
+	self.contents[address+2] = bytes[2];
+	self.contents[address+3] = bytes[3];	
+    }
+    pub fn write_u64(&mut self, address : usize, value: u64) {
+	let bytes = value.to_le_bytes();
+	self.contents[address+0] = bytes[0];
+	self.contents[address+1] = bytes[1];
+	self.contents[address+2] = bytes[2];
+	self.contents[address+3] = bytes[3];
+	self.contents[address+4] = bytes[4];
+	self.contents[address+5] = bytes[5];
+	self.contents[address+6] = bytes[6];
+	self.contents[address+7] = bytes[7];	
+    }
 }
 
 // =====================================================
 // Machine Codes
 // =====================================================
 
+#[derive(Clone,Copy,PartialEq)]
+enum Width {
+    /// 8 bits
+    Byte,
+    /// 16 bits    
+    Word,
+    /// 32 bits    
+    DoubleWord,
+    /// 64 bits    
+    QuadWord	    
+}
+
+#[derive(Clone,Copy,PartialEq)]
+enum Sign {
+    // Indicates an unsigned operation
+    Unsigned,
+    // Indicates a signed operation
+    Signed
+}
+
 /// Microcode is used to define the semantics of virtual machine
 /// instructions.  This means, for example, they can be executed using
 /// a "virtual machine interpreter".
 #[derive(Clone,Copy,PartialEq)]
 enum MachineCode {
-    /// x := y (8 bits)
-    COPY_8(usize,usize),
-    /// x := y (16 bits)
-    COPY_16(usize,usize),
+    /// x := x + y (w bits signed or unsigned)
+    Add(usize,usize,Width),    
+    /// x := y (w bits)
+    Copy(usize,usize,Width),
     /// pc := i
-    GOTO(usize),
+    Goto(usize),    
     /// pc := pc + i
-    JUMP(usize),
+    Jump(isize),
     /// x := i
-    LOAD_8(usize,u8)
+    Load(usize,u64,Width),
 }
 
 // =====================================================
@@ -196,24 +256,86 @@ impl<'a> MachineState<'a> {
     }
     pub fn execute(&mut self, insn: MachineCode) {
 	match insn {
-	    MachineCode::COPY_8(x,y) => {
+	    MachineCode::Add(x,y,Width::Byte) => {
+		let v = self.data.read_u8(x);
+		let w = self.data.read_u8(y);
+		let r = v.wrapping_add(w);
+		// Note, must allow wrap around semantics so that
+		// signed arithmetic works as expected.
+		self.data.write_u8(x,r);
+		self.pc += 1;
+	    }
+	    MachineCode::Add(x,y,Width::Word) => {
+		let v = self.data.read_u16(x);
+		let w = self.data.read_u16(y);
+		let r = v.wrapping_add(w);
+		// Note, must allow wrap around semantics so that
+		// signed arithmetic works as expected.
+		self.data.write_u16(x,r);
+		self.pc += 1;
+	    }
+	    MachineCode::Add(x,y,Width::DoubleWord) => {
+		let v = self.data.read_u32(x);
+		let w = self.data.read_u32(y);
+		let r = v.wrapping_add(w);
+		// Note, must allow wrap around semantics so that
+		// signed arithmetic works as expected.
+		self.data.write_u32(x,r);
+		self.pc += 1;
+	    }
+	    MachineCode::Add(x,y,Width::QuadWord) => {
+		let v = self.data.read_u64(x);
+		let w = self.data.read_u64(y);
+		let r = v.wrapping_add(w);
+		// Note, must allow wrap around semantics so that
+		// signed arithmetic works as expected.
+		self.data.write_u64(x,r);
+		self.pc += 1;
+	    }
+	    MachineCode::Copy(x,y,Width::Byte) => {
 		let v = self.data.read_u8(y);
 		self.data.write_u8(x,v);
 		self.pc += 1;
 	    }
-	    MachineCode::COPY_16(x,y) => {
+	    MachineCode::Copy(x,y,Width::Word) => {
 		let v = self.data.read_u16(y);
 		self.data.write_u16(x,v);
 		self.pc += 1;
 	    }
-	    MachineCode::GOTO(i) => {
+	    MachineCode::Copy(x,y,Width::DoubleWord) => {
+		let v = self.data.read_u32(y);
+		self.data.write_u32(x,v);
+		self.pc += 1;
+	    }
+	    MachineCode::Copy(x,y,Width::QuadWord) => {
+		let v = self.data.read_u64(y);
+		self.data.write_u64(x,v);
+		self.pc += 1;
+	    }
+	    MachineCode::Goto(i) => {
 		self.pc = i;
 	    }
-	    MachineCode::JUMP(i) => {
-		self.pc += i;
+	    MachineCode::Jump(i) => {
+		if i < 0 {
+		    self.pc -= -i as usize;
+		} else {
+		    self.pc += i as usize;
+		}
 	    }	    
-	    MachineCode::LOAD_8(x,i) => {
-		self.data.write_u8(x,i);
+	    MachineCode::Load(x,i,Width::Byte) => {
+		self.data.write_u8(x,i.try_into().unwrap());
+		self.pc += 1;
+	    }
+	    MachineCode::Load(x,i,Width::Word) => {
+		self.data.write_u16(x,i.try_into().unwrap());
+		self.pc += 1;
+	    }
+	    MachineCode::Load(x,i,Width::DoubleWord) => {
+		self.data.write_u32(x,i.try_into().unwrap());
+		self.pc += 1;
+	    }
+	    MachineCode::Load(x,i,Width::QuadWord) => {
+		self.data.write_u64(x,i);
 		self.pc += 1;
 	    }
 	    _ => {
@@ -273,8 +395,10 @@ mod tests {
     use crate::DomainSize;
     use crate::MachineCode;
     use crate::MachineState;
-    use crate::Memory;    
-
+    use crate::Memory;
+    use crate::Width::*;
+    use crate::Sign::*;
+    
     // =====================================================
     // Bits
     // =====================================================   
@@ -394,21 +518,188 @@ mod tests {
     }
 
     // =====================================================
-    // Machine Codes
+    // Machine Codes (Add)
     // =====================================================   
 
     #[test]
-    fn test_microcode_01() {
-	let mut bytes : [u8;1] = [0];
+    fn test_add_01() {
+	let mut bytes : [u8;2] = [1,2];
 	let mut state = MachineState::new(0,&mut bytes);
-	//
-	state.execute(MachineCode::LOAD_8(0,1));
-	//
-	assert_eq!(bytes[0],1);
+	// Execute an instruction
+	state.execute(MachineCode::Add(0,1,Byte));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[3,2]);
     }
+
+    #[test]
+    fn test_add_02() {
+	let mut bytes : [u8;2] = [255,2];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Add(0,1,Byte));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[1,2]);
+    }    
+
+    #[test]
+    fn test_add_03() {
+	let mut bytes : [u8;4] = [1,2, 2,2];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Add(0,1,Word));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[3,4,2,2]);
+    }    
     
     // =====================================================
-    // Machine Codes
+    // Machine Codes (Copy)
     // =====================================================   
+    
+    #[test]
+    fn test_copy_01() {
+	let mut bytes : [u8;2] = [1,2];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Copy(0,1,Byte));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[2,2]);
+    }
+
+    #[test]
+    fn test_copy_02() {
+	let mut bytes : [u8;4] = [1,1,2,3];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Copy(0,1,Word));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[1,2,2,3]);
+    }
+
+    #[test]
+    fn test_copy_03() {
+	let mut bytes : [u8;4] = [1,1,2,3];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Copy(0,2,Word));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[2,3,2,3]);
+    }
+
+    // =====================================================
+    // Machine Codes (Load)
+    // =====================================================   
+    
+    #[test]
+    fn test_load_01() {
+	let mut bytes : [u8;2] = [0,2];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Load(0,1,Byte));
+	// Check what happened
+	assert_eq!(state.pc,1);	
+	assert_eq!(bytes,[1,2]);
+    }
+
+    #[test]
+    fn test_load_02() {
+	let mut bytes : [u8;4] = [0,1,2,3];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Load(0,1,Word));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[1,0,2,3]);
+    }
+
+    #[test]
+    fn test_load_03() {
+	let mut bytes : [u8;4] = [0,0,2,3];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Load(0,257,Word));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[1,1,2,3]);	
+    }
+
+    #[test]
+    fn test_load_04() {
+	let mut bytes : [u8;4] = [0,0,1,1];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Load(0,257,DoubleWord));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[1,1,0,0]);
+    }
+
+    #[test]
+    fn test_load_05() {
+	let mut bytes : [u8;8] = [2,3,4,5,6,7,8,9];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Load(0,65537,DoubleWord));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[1,0,1,0,6,7,8,9]);
+    }
+
+    // =====================================================
+    // Machine Codes (Goto)
+    // =====================================================   
+    
+    #[test]
+    fn test_goto_01() {
+	let mut bytes : [u8;2] = [1,2];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Goto(2));
+	// Check what happened
+	assert_eq!(state.pc,2);
+	assert_eq!(bytes,[1,2]);
+    }
+
+    #[test]
+    fn test_goto_02() {
+	let mut bytes : [u8;2] = [1,2];
+	let mut state = MachineState::new(0,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Goto(0));
+	// Check what happened
+	assert_eq!(state.pc,0);
+	assert_eq!(bytes,[1,2]);
+    }
+
+    // =====================================================
+    // Machine Codes (Jump)
+    // =====================================================       
+    
+    #[test]
+    fn test_jump_01() {
+	let mut bytes : [u8;2] = [1,2];
+	let mut state = MachineState::new(1,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Jump(2));
+	// Check what happened
+	assert_eq!(state.pc,3);
+	assert_eq!(bytes,[1,2]);
+    }
+
+    #[test]
+    fn test_jump_02() {
+	let mut bytes : [u8;2] = [1,2];
+	let mut state = MachineState::new(2,&mut bytes);
+	// Execute an instruction
+	state.execute(MachineCode::Jump(-1));
+	// Check what happened
+	assert_eq!(state.pc,1);
+	assert_eq!(bytes,[1,2]);
+    }
    
 }
