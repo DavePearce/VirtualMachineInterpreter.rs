@@ -1,73 +1,7 @@
 use num::BigUint;
+use crate::domain::Countable;
+use crate::domain::{Bits,Bytes};
 use crate::machine::MicroCode;
-use crate::machine::State;
-
-/// Used for converting a given domain into a physical count of
-/// elements in that domain.  For example, the domain of 2bits would
-/// convert into a count of 4 (i.e. since that is the number of
-/// distinct elements in the domain).
-pub trait DomainSize {
-    /// Calculate the number of elements in the given domain.
-    fn to_domsize(&self) -> BigUint;
-}
-
-// ================================================================
-// Bits
-// ================================================================
-
-#[derive(Clone,Copy,PartialEq)]
-pub struct Bits {
-    // INVARIANT: value > 0
-    value : u8,
-}
-
-impl From<u8> for Bits {
-    fn from(value:u8) -> Self {
-	assert!(value != 0);
-	Bits{value}
-    }
-}
-
-impl DomainSize for Bits {
-    fn to_domsize(&self) -> BigUint {
-	let mut count = BigUint::from(1u32);
-	//
-	for i in 0 .. self.value {
-	    count = count * 2u32;
-	}
-	//
-	count
-    }
-}
-
-// ================================================================
-// Bytes
-// ================================================================
-
-#[derive(Clone,Copy,PartialEq)]
-pub struct Bytes {
-    // INVARIANT: value > 0    
-    value : u8,
-}
-
-impl From<u8> for Bytes {
-    fn from(value:u8) -> Self {
-	assert!(value != 0);
-	Bytes{value}
-    }
-}
-
-impl DomainSize for Bytes {
-    fn to_domsize(&self) -> BigUint {
-	let mut count = BigUint::from(1u32);
-	//
-	for i in 0 .. self.value {
-	    count = count * 256u32;
-	}
-	//
-	count
-    }
-}
 
 // ================================================================
 // Format
@@ -112,18 +46,18 @@ impl Format {
     pub fn new(width:Bytes, label: &str, opcode: Bits, operands: Vec<Bits>) -> Format {	
 	let r = Format{width,label:label.to_string(),opcode,operands};
 	// Sanity check there is enough space
-	assert!(width.to_domsize() >= r.to_domsize());
+	assert!(width.count() >= r.count());
 	//
 	r
     }
 }
 
-impl DomainSize for Format {
-    fn to_domsize(&self) -> BigUint {
-	let mut count = BigUint::from(self.opcode.to_domsize());
+impl Countable for Format {
+    fn count(&self) -> BigUint {
+	let mut count = BigUint::from(self.opcode.count());
 	//
 	for op in &self.operands {
-	    count = count * op.to_domsize();
+	    count = count * op.count();
 	}
 	//
 	count
@@ -147,13 +81,6 @@ pub struct Instruction<'a> {
 impl<'a> Instruction<'a> {
     pub fn new(mnemonic: &'a str, format: &'a Format, semantic: &'a [MicroCode]) -> Self {
 	Instruction{mnemonic,format,semantic}
-    }
-
-    /// Apply a given instruction to a given machine state.
-    pub fn execute(&self, state: &mut State) {
-	for insn in self.semantic {
-	    state.execute(*insn);
-	}
     }
 }
 

@@ -1,8 +1,8 @@
 use num::BigUint;
-use virmin::insn::Bits;
-use virmin::insn::Bytes;    
+use virmin::domain::Bits;
+use virmin::domain::Bytes;
+use virmin::domain::Countable;
 use virmin::insn::Format;
-use virmin::insn::DomainSize;
 use virmin::insn::Instruction;
 use virmin::machine::MicroCode;
 use virmin::machine::Width::{Byte,Word};
@@ -20,19 +20,19 @@ fn test_bits_00() {
 #[test]
 fn test_bits_01() {
     let b = Bits::from(1);
-    assert_eq!(b.to_domsize(),BigUint::from(2u32));
+    assert_eq!(b.count(),BigUint::from(2u32));
 }
 
 #[test]
 fn test_bits_02() {
     let b = Bits::from(2);
-    assert_eq!(b.to_domsize(),BigUint::from(4u32));
+    assert_eq!(b.count(),BigUint::from(4u32));
 }
 
 #[test]
 fn test_bits_03() {
     let b = Bits::from(3);
-    assert_eq!(b.to_domsize(),BigUint::from(8u32));
+    assert_eq!(b.count(),BigUint::from(8u32));
 }
 
 // =====================================================
@@ -48,19 +48,19 @@ fn test_bytes_00() {
 #[test]
 fn test_bytes_01() {
     let b = Bytes::from(1);
-    assert_eq!(b.to_domsize(),BigUint::from(256u32));
+    assert_eq!(b.count(),BigUint::from(256u32));
 }
 
 #[test]
 fn test_bytes_02() {
     let b = Bytes::from(2);
-    assert_eq!(b.to_domsize(),BigUint::from(65536u32));
+    assert_eq!(b.count(),BigUint::from(65536u32));
 }
 
 #[test]
 fn test_bytes_03() {
     let b = Bytes::from(3);
-    assert_eq!(b.to_domsize(),BigUint::from(16777216u32));
+    assert_eq!(b.count(),BigUint::from(16777216u32));
 }
 
 // =====================================================
@@ -93,7 +93,7 @@ fn test_format_03() {
     let opcode = Bits::from(4);
     let operand = Bits::from(4);
     let fmt = Format::new(width,"fmt",opcode,vec![operand]);
-    assert_eq!(fmt.to_domsize(),BigUint::from(256u32));
+    assert_eq!(fmt.count(),BigUint::from(256u32));
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn test_format_04() {
     let opcode : Bits = Bits::from(4);
     let operand : Bits = Bits::from(2);
     let fmt = Format::new(width,"fmt",opcode,vec![operand,operand]);
-    assert_eq!(fmt.to_domsize(),BigUint::from(256u32));	
+    assert_eq!(fmt.count(),BigUint::from(256u32));	
 }
 
 #[test]
@@ -112,7 +112,7 @@ fn test_format_05() {
     let width : Bytes = Bytes::from(1);	
     let opcode : Bits = Bits::from(6);
     let fmt = Format::new(width,"fmt",opcode,vec![]);
-    assert_eq!(fmt.to_domsize(),BigUint::from(64u32));	
+    assert_eq!(fmt.count(),BigUint::from(64u32));	
 }
 
 #[test]
@@ -122,7 +122,7 @@ fn test_format_06() {
     let opcode : Bits = Bits::from(2);
     let operand : Bits = Bits::from(2);
     let fmt = Format::new(width,"fmt",opcode,vec![operand,operand]);
-    assert_eq!(fmt.to_domsize(),BigUint::from(64u32));	
+    assert_eq!(fmt.count(),BigUint::from(64u32));	
 }
 
 // =====================================================
