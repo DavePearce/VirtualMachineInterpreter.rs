@@ -1,9 +1,9 @@
 use num::BigUint;
-use virmin::domain::Bits;
-use virmin::domain::Bytes;
-use virmin::domain::Countable;
+use virmin::domain::*;
 use virmin::insn::Format;
 use virmin::insn::Instruction;
+use virmin::insn::AbstractMicroCode::*;
+use virmin::insn::Operand::*;
 use virmin::machine::MicroCode;
 use virmin::machine::Width::{Byte,Word};
 
@@ -71,57 +71,41 @@ fn test_bytes_03() {
 #[should_panic]
 fn test_format_01() {
     // Check that 10bits does not fit into one byte
-    let width = Bytes::from(1);
-    let opcode = Bits::from(10);
-    Format::new(width,"fmt",opcode,vec![]);
+    Format::new(ONE_BYTE,"fmt",TEN_BITS, &[]);
 }
 
 #[test]
 #[should_panic]
 fn test_format_02() {
     // Check that 10bits does not fit into one byte
-    let width = Bytes::from(1);
-    let opcode = Bits::from(4);
-    let operand = Bits::from(3);
-    Format::new(width,"fmt",opcode,vec![operand,operand]);
+    Format::new(ONE_BYTE,"fmt",FOUR_BITS, &[THREE_BITS,THREE_BITS]);
 }   
 
 #[test]
 fn test_format_03() {
     // Check that 8 bits fits into one byte
-    let width = Bytes::from(1);
-    let opcode = Bits::from(4);
-    let operand = Bits::from(4);
-    let fmt = Format::new(width,"fmt",opcode,vec![operand]);
+    let fmt = Format::new(ONE_BYTE,"fmt", FOUR_BITS, &[FOUR_BITS]);
     assert_eq!(fmt.count(),BigUint::from(256u32));
 }
 
 #[test]
 fn test_format_04() {
     // Check that 8 bits fits into one byte
-    let width : Bytes = Bytes::from(1);	
-    let opcode : Bits = Bits::from(4);
-    let operand : Bits = Bits::from(2);
-    let fmt = Format::new(width,"fmt",opcode,vec![operand,operand]);
+    let fmt = Format::new(ONE_BYTE,"fmt", FOUR_BITS, &[TWO_BITS, TWO_BITS]);
     assert_eq!(fmt.count(),BigUint::from(256u32));	
 }
 
 #[test]
 fn test_format_05() {
     // Check that 6 bits fit into one byte with spare
-    let width : Bytes = Bytes::from(1);	
-    let opcode : Bits = Bits::from(6);
-    let fmt = Format::new(width,"fmt",opcode,vec![]);
+    let fmt = Format::new(ONE_BYTE,"fmt",SIX_BITS, &[]);
     assert_eq!(fmt.count(),BigUint::from(64u32));	
 }
 
 #[test]
 fn test_format_06() {
     // Check that 6 bits fits into one byte with space
-    let width : Bytes = Bytes::from(1);	
-    let opcode : Bits = Bits::from(2);
-    let operand : Bits = Bits::from(2);
-    let fmt = Format::new(width,"fmt",opcode,vec![operand,operand]);
+    let fmt = Format::new(ONE_BYTE,"fmt",TWO_BITS, &[TWO_BITS,TWO_BITS]);
     assert_eq!(fmt.count(),BigUint::from(64u32));	
 }
 
@@ -131,10 +115,36 @@ fn test_format_06() {
 
 #[test]
 fn test_insn_01() {
-    // 4 bits opcode, no operands
-    let fmt = Format::new(Bytes::from(1),"fmt",Bits::from(4),vec![]);
-    // FIXME: currently a disconnect here, because the microcode is
-    // concrete whereas we are in a symbolic world.
-    let microcode = [MicroCode::Load(0,0,Byte)];
+    let fmt = Format::new(ONE_BYTE,"fmt",FOUR_BITS, &[FOUR_BITS]);
+    let microcode = [Load(Var(0),0,Byte)];
+    let insn = Instruction::new("insn", &fmt, &microcode);
+    //
+    assert!(insn.to_microcode(&[1]) == vec![MicroCode::Load(1,0,Byte)])
+}
+
+#[test]
+fn test_insn_02() {
+    let fmt = Format::new(ONE_BYTE,"fmt",FOUR_BITS, &[FOUR_BITS]);
+    let microcode = [Load(Const(123),0,Byte)];
+    let insn = Instruction::new("insn", &fmt, &microcode);
+    //
+    assert!(insn.to_microcode(&[1]) == vec![MicroCode::Load(123,0,Byte)])
+}
+
+#[test]
+#[should_panic]
+fn test_insn_03() {
+    let fmt = Format::new(ONE_BYTE,"fmt",FOUR_BITS, &[]);
+    let microcode = [Load(Var(0),0,Byte)];
+    // Microcode expects operand, but format has none.
+    let insn = Instruction::new("insn", &fmt, &microcode);
+}
+
+#[test]
+#[should_panic]
+fn test_insn_04() {
+    let fmt = Format::new(ONE_BYTE,"fmt",FOUR_BITS, &[FOUR_BITS]);
+    let microcode = [Load(Var(1),0,Byte)];
+    // Microcode expects two operands, but format has one.
     let insn = Instruction::new("insn", &fmt, &microcode);
 }

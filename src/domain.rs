@@ -13,6 +13,17 @@ pub trait Countable {
 // Bits
 // ================================================================
 
+pub const ONE_BITS : Bits = Bits{value:1};
+pub const TWO_BITS : Bits = Bits{value:2};
+pub const THREE_BITS : Bits = Bits{value:3};
+pub const FOUR_BITS : Bits = Bits{value:4};
+pub const FIVE_BITS : Bits = Bits{value:5};
+pub const SIX_BITS : Bits = Bits{value:6};
+pub const SEVEN_BITS : Bits = Bits{value:7};
+pub const EIGHT_BITS : Bits = Bits{value:8};
+pub const NINE_BITS : Bits = Bits{value:9};
+pub const TEN_BITS : Bits = Bits{value:10};
+
 #[derive(Clone,Copy,PartialEq)]
 pub struct Bits {
     // INVARIANT: value > 0
@@ -41,6 +52,9 @@ impl Countable for Bits {
 // ================================================================
 // Bytes
 // ================================================================
+
+pub const ONE_BYTE : Bytes = Bytes{value:1};
+pub const TWO_BYTES : Bytes = Bytes{value:2};
 
 #[derive(Clone,Copy,PartialEq)]
 pub struct Bytes {
